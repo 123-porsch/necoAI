@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>necoAi</title>
+        <style>
+            body {
+                margin: 0;
+                background: linear-gradient(135deg, #060816, #111b3f);
+                color: #ffffff;
+                font-family: apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                display: flex;
+                justify-content: center;
+                align-items: flex-start;
+                min-height: 100vh;
+                padding: 16px;
+                box-sizing: border-box;
+                overflow-y: auto;
+            }
+
+            .app-shell {
+                position: relative;
+                width: 100%;
+                max-width: 860px;
+                display: flex;
+                align-items: flex-start;
+                justify-content: center;
+                overflow: visible;
+                padding-top: 8px;
+            }
+
+            .chat-container {
+                width: 100%;
+                max-width: 760px;
+                background: rgba(8, 14, 35, 0.95);
+                border: 1px solid rgba(255,255,255,0.12);
+                border-radius: 24px;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+                overflow: hidden;
+                margin-left: 24px;
+            }
+
+            .chat-header {
+                padding: 18px 20px;
+                background: linear-gradient(90deg, #6b4dff, #21c7ff);
+                font-weight: 700;
+                font-size: 18px;
+            }
+
+            #console {
+                height: min(430px, 55vh);
+                overflow-y: auto;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+                padding: 18px 16px;
+                white-space: pre-wrap;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                background: rgba(255,255,255,0.02);
+            }
+
+            #console::-webkit-scrollbar {
+                display: none;
+            }
+
+            .mensaje {
+                max-width: 78%;
+                padding: 12px 14px;
+                border-radius: 16px;
+                line-height: 1.4;
+                word-break: break-word;
+            }
+
+            .mensaje-ia {
+                background: #1f2947;
+                align-self: flex-start;
+                border-bottom-left-radius: 4px;
+            }
+
+            .mensaje-usuario {
+                background: linear-gradient(90deg, #5b7cff, #3fd4ff);
+                align-self: flex-end;
+                border-bottom-right-radius: 4px;
+            }
+
+            .mensaje-typing {
+                background: #1f2947;
+                align-self: flex-start;
+                border-bottom-left-radius: 4px;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                min-height: 22px;
+                padding: 10px 14px;
+            }
+
+            .dot {
+                width: 7px;
+                height: 7px;
+                background: #ffffff;
+                border-radius: 50%;
+                display: inline-block;
+                animation: bounce 0.8s infinite ease-in-out;
+            }
+
+            .dot:nth-child(2) {
+                animation-delay: 0.15s;
+            }
+
+            .dot:nth-child(3) {
+                animation-delay: 0.3s;
+            }
+
+            @keyframes bounce {
+                0%, 80%, 100% {
+                    transform: translateY(0);
+                    opacity: 0.6;
+                }
+                40% {
+                    transform: translateY(-5px);
+                    opacity: 1;
+                }
+            }
+
+            .input-box {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                padding: 12px;
+                border-top: 1px solid rgba(255,255,255,0.1);
+                background: rgba(255,255,255,0.03);
+            }
+
+            .input-row {
+                display: flex;
+                gap: 6px;
+                flex-wrap: wrap;
+            }
+
+            input {
+                flex: 1;
+                background-color: #10172f;
+                color: #ffffff;
+                border: 1px solid rgba(255,255,255,0.16);
+                font-family: apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                font-size: 16px;
+                padding: 12px 14px;
+                outline: none;
+                border-radius: 999px;
+            }
+
+            input:focus {
+                border-color: #6b4dff;
+                box-shadow: 0 0 0 2px rgba(107, 77, 255, 0.2);
+            }
+
+            .btn {
+                background: #1f2947;
+                color: white;
+                border: none;
+                border-radius: 10px;
+                padding: 8px 10px;
+                cursor: pointer;
+                font-size: 14px;
+                min-width: 44px;
+                flex: 1;
+                max-width: 60px;
+            }
+
+            .btn:hover {
+                background: #2b3b63;
+            }
+
+            .btn-accion {
+                background: linear-gradient(90deg, #6b4dff, #21c7ff);
+            }
+
+            .btn-accion:hover {
+                filter: brightness(1.08);
+            }
+
+            .btn-wide {
+                flex: 1.6;
+                max-width: 120px;
+            }
+
+            .sidebar-toggle {
+                position: absolute;
+                left: -2px;
+                top: 18px;
+                z-index: 10;
+                background: linear-gradient(90deg, #6b4dff, #21c7ff);
+                color: white;
+                border: none;
+                border-radius: 0 999px 999px 0;
+                padding: 10px 12px;
+                cursor: pointer;
+                font-size: 16px;
+                transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), left 0.35s cubic-bezier(0.22, 1, 0.36, 1), background 0.2s ease, color 0.2s ease;
+            }
+
+            .sidebar-toggle.open {
+                transform: translateX(240px);
+                left: 0;
+                background: #ffffff;
+                color: #111b3f;
+            }
+
+            .sidebar {
+                position: absolute;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                width: 240px;
+                background: rgba(8, 14, 35, 0.98);
+                border-right: 1px solid rgba(255,255,255,0.1);
+                transform: translateX(-100%);
+                transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease;
+                padding: 18px 14px;
+                box-sizing: border-box;
+                z-index: 9;
+                border-radius: 24px 0 0 24px;
+                opacity: 0;
+                pointer-events: none;
+                visibility: visible;
+                display: block;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+                opacity: 1;
+                pointer-events: auto;
+            }
+
+            .sidebar h3 {
+                margin: 0 0 12px 0;
+                font-size: 16px;
+            }
+
+            .sidebar button {
+                width: 100%;
+                text-align: left;
+                margin-bottom: 8px;
+                background: #1f2947;
+                color: white;
+                border: none;
+                border-radius: 10px;
+                padding: 10px 12px;
+                cursor: pointer;
+            }
+
+            .sidebar button:hover {
+                background: #2b3b63;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="app-shell">
+            <button class="sidebar-toggle" id="toggleSidebar">☰</button>
+            <aside class="sidebar" id="sidebar">
+                <h3>Funciones rápidas</h3>
+                <button data-action="saludo">Saludo</button>
+                <button data-action="ayuda">Ayuda</button>
+                <button data-action="calcular">Calcular</button>
+                <button data-action="emocion">Estado de ánimo</button>
+                <button data-action="chiste">Contar un chiste</button>
+                <button data-action="limpiar">Limpiar chat</button>
+            </aside>
+            <div class="chat-container">
+                <div class="chat-header">Neco AI</div>
+            <div id="console"><div class="mensaje mensaje-ia">Hola, soy Neco AI. ¿Cómo te llamas?</div></div>
+            <div class="input-box">
+                <input type="text" id="entrada" autofocus placeholder="Escribe aquí...">
+                <div class="input-row">
+                    <button class="btn" data-value="7">7</button>
+                    <button class="btn" data-value="8">8</button>
+                    <button class="btn" data-value="9">9</button>
+                    <button class="btn" data-value="+">+</button>
+                    <button class="btn" data-value="-">-</button>
+                </div>
+                <div class="input-row">
+                    <button class="btn" data-value="4">4</button>
+                    <button class="btn" data-value="5">5</button>
+                    <button class="btn" data-value="6">6</button>
+                    <button class="btn" data-value="*">×</button>
+                    <button class="btn" data-value="/">÷</button>
+                </div>
+                <div class="input-row">
+                    <button class="btn" data-value="1">1</button>
+                    <button class="btn" data-value="2">2</button>
+                    <button class="btn" data-value="3">3</button>
+                    <button class="btn" data-value="(">(</button>
+                    <button class="btn" data-value=")">)</button>
+                </div>
+                <div class="input-row">
+                    <button class="btn" data-value="0">0</button>
+                    <button class="btn" data-value=".">.</button>
+                    <button class="btn btn-accion" data-value="sqrt( )">sqrt()</button>
+                    <button class="btn btn-accion" data-value="sin()">sin()</button>
+                    <button class="btn btn-accion" data-value="cos()">cos()</button>
+                </div>
+                <div class="input-row">
+                    <button class="btn btn-accion" data-value="tan()">tan()</button>
+                    <button class="btn btn-accion" data-value="asin()">asin()</button>
+                    <button class="btn btn-accion" data-value="acos()">acos()</button>
+                    <button class="btn btn-accion" data-value="atan()">atan()</button>
+                    <button class="btn btn-accion" id="btnBorrar">C</button>
+                </div>
+                <div class="input-row">
+                    <button class="btn btn-accion btn-wide" id="btnIgual">=</button>
+                    <button class="btn btn-accion btn-wide" id="btnEnviar">Enviar</button>
+                </div>
+            </div>
+            </div>
+        </div>
+
+        <script>
+            const console = document.getElementById('console');
+            const sidebar = document.getElementById('sidebar');
+            const toggleSidebar = document.getElementById('toggleSidebar');
+            const sidebarButtons = document.querySelectorAll('.sidebar button');
+            const entrada = document.getElementById('entrada');
+            const botones = document.querySelectorAll('.btn:not(#btnEnviar):not(#btnBorrar):not(#btnIgual)');
+            const botonEnviar = document.getElementById('btnEnviar');
+            const botonBorrar = document.getElementById('btnBorrar');
+            const botonIgual = document.getElementById('btnIgual');
+            let nombre = "";
+            let esperandoNombre = true;
+            let ultimoIndiceChiste = -1;
+
+            const chistes = [
+                "— Papá, papá, ¿qué se siente tener un hijo tan guapo?\n— No lo sé, hijo, pregúntale a tu abuelo.",
+                "— ¿Qué hace una abeja en el gimnasio?\n— ¡Zum-ba!",
+                "— ¿Por qué los pájaros vuelan al sur en invierno?\n— Porque caminando tardan demasiado.",
+                "— Camarero, hay una mosca en mi sopa.\n— No se preocupe, el murciélago en el segundo plato se la comerá.",
+                "— ¡Hijo, hijo, qué haces en la ventana?\n— Miro pasar el tiempo, mamá.\n— Ah, bueno, avísame cuando pase el de las pizzas.",
+                "— Hola, ¿está Agustín?\n— No, estoy incomodín.",
+                "— ¿Qué le dice una taza a otra?\n— ¡Qué tazón tan agradable!",
+                "— ¿Por qué los elefantes no usan computadoras?\n— Porque les da miedo el ratón.",
+                "— Camarero, ¡este bistec tiene muchos años!\n— Pues cómaselo, que a su edad ya lo puede digerir bien.",
+                "— ¿Qué hace un pez en el agua?\n— Nada.",
+                "— ¿Cómo se dice pelo sucio en chino?\n— Chin-champú.",
+                "— ¿Cuál es el colmo de un electricista?\n— No tener corriente en las ideas.",
+                "— ¡Papá, papá, en el colegio me dicen desobediente!\n— Hijo, no me hagas caso y vete a tu cuarto.",
+                "— ¿Por qué los esqueletos no pelean entre ellos?\n— Porque no tienen agallas.",
+                "— ¿Qué le dice una farola a otra?\n— Oye, me das mala espina, siempre estás iluminada.",
+                "— ¿Cuál es el animal más antiguo del mundo?\n— La cebra, porque está en blanco y negro.",
+                "— Doctor, doctor, ¿qué tengo?\n— Tiene usted una enfermedad muy rara.\n— ¿Y es grave?\n— No sé, déjame buscar en Google.",
+                "— ¿Cómo se despide un químico?\n— Ácido un placer.",
+                "— ¿Qué pasa si tiras un pato al agua?\n— Nada, porque sabe flotar.",
+                "— ¿Qué hace una impresora en la nieve?\n— ¡Imprimiendo huellas frías!",
+                "— Oye, ¿sabes qué hora es?\n— Sí, la hora de irnos a dormir.",
+                "— ¿Por qué los libros de matemáticas están tristes?\n— Porque tienen demasiados problemas."
+            ];
+
+            function obtenerChisteAleatorio() {
+                if (chistes.length <= 1) return chistes[0];
+                let indice;
+                do {
+                    indice = Math.floor(Math.random() * chistes.length);
+                } while (indice === ultimoIndiceChiste);
+                
+                ultimoIndiceChiste = indice;
+                return chistes[indice];
+            }
+
+            function normalizarTexto(texto) {
+                return texto
+                    .toLowerCase()
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .replace(/[^\w\s]/g, '')
+                    .trim();
+            }
+
+            function extraerNombre(textoOriginal) {
+                const coincidencia = textoOriginal.match(/(?:me llamo|mi nombre es|soy)\s+([a-zA-ZáéíóúÁÉÍÓÚñÑ ]+)/i);
+                if (coincidencia && coincidencia[1].trim()) {
+                    return coincidencia[1].trim();
+                }
+
+                const limpio = textoOriginal
+                    .replace(/^(hola|buenas|buenos|buenas tardes|buenas noches|soy)\s+/i, '')
+                    .trim();
+
+                return limpio || textoOriginal.trim();
+            }
+
+            function evaluarExpresion(texto) {
+                let expresion = texto.trim().replace(/\s+/g, '');
+                if (!expresion) return null;
+
+                const pareceMatematica = /^(?:[0-9]+|[0-9.]+|[()+\-*/.^]|sqrt|sin|cos|tan|asin|acos|atan|sen|arcsen|arccos|arctan|log|ln|exp|abs|pow|pi|e|round|floor|ceil|min|max)+$/i.test(expresion);
+                if (!pareceMatematica) return null;
+
+                if (!/^[0-9+\-*/().,^a-zA-Z_]+$/.test(expresion)) return null;
+
+                expresion = expresion.replace(/\b(arcsen|arcsin)\b/gi, 'asin');
+                expresion = expresion.replace(/\b(arccos)\b/gi, 'acos');
+                expresion = expresion.replace(/\b(arctan)\b/gi, 'atan');
+                expresion = expresion.replace(/\b(sen)\b/gi, 'sin');
+                expresion = expresion.replace(/\b(tg)\b/gi, 'tan');
+                expresion = expresion.replace(/\b(ln)\b/gi, 'log');
+                expresion = expresion.replace(/\b(pi)\b/gi, 'Math.PI');
+                expresion = expresion.replace(/\b(e)\b/gi, 'Math.E');
+                expresion = expresion.replace(/\^/g, '**');
+                expresion = expresion.replace(/\b(sqrt|sin|cos|tan|asin|acos|atan|log|exp|abs|pow|round|floor|ceil|min|max)\b/gi, match => `Math.${match}`);
+
+                try {
+                    const resultado = Function(`"use strict"; return (${expresion});`)();
+                    if (typeof resultado === 'number' && Number.isFinite(resultado)) {
+                        return resultado;
+                    }
+                    return null;
+                } catch (error) {
+                    return null;
+                }
+            }
+
+            function mostrarMensaje(texto, tipo = 'ia') {
+                if (tipo === 'ia') {
+                    const indicador = document.createElement('div');
+                    indicador.className = 'mensaje mensaje-typing';
+                    indicador.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
+                    console.appendChild(indicador);
+                    console.scrollTop = console.scrollHeight;
+
+                    const demora = Math.min(3200, 700 + texto.length * 24);
+                    setTimeout(() => {
+                        indicador.remove();
+                        const burbuja = document.createElement('div');
+                        burbuja.className = 'mensaje mensaje-ia';
+                        burbuja.textContent = texto;
+                        console.appendChild(burbuja);
+                        console.scrollTop = console.scrollHeight;
+                    }, demora);
+                    return;
+                }
+
+                const clase = 'mensaje-usuario';
+                const burbuja = document.createElement('div');
+                burbuja.className = `mensaje ${clase}`;
+                burbuja.textContent = texto;
+                console.appendChild(burbuja);
+                console.scrollTop = console.scrollHeight;
+            }
+
+            function limpiarChat() {
+                console.innerHTML = '<div class="mensaje mensaje-ia">Chat limpio. ¿En qué te puedo ayudar?</div>';
+            }
+
+            function extraerExpresionMatematica(textoOriginal) {
+                const limpio = textoOriginal
+                    .replace(/\b(cuanto|cuánto|cuanta|cuánta|que|qué|what|is|are|the|de|la|el|un|una|por|para|calcula|calcular|resuelve|haz|resultado|result|of|es|son)\b/gi, '')
+                    .replace(/\s+/g, '')
+                    .replace(/^[^0-9a-zA-Z()+\-*/.^]+|[^0-9a-zA-Z()+\-*/.^]+$/g, '');
+
+                const resultado = evaluarExpresion(limpio);
+                if (resultado !== null && limpio) {
+                    return { expresion: limpio, resultado };
+                }
+
+                return null;
+            }
+
+            function enviarMensaje() {
+                let textoOriginal = entrada.value.trim();
+                if (!textoOriginal) return;
+
+                mostrarMensaje(textoOriginal, 'usuario');
+                entrada.value = '';
+
+                let texto = normalizarTexto(textoOriginal);
+
+                if (esperandoNombre) {
+                    const nombrePosible = extraerNombre(textoOriginal);
+                    const resultadoMatematicoInicial = evaluarExpresion(textoOriginal);
+                    const esDespedida = /^(adios|adiós|chau|bye|hasta luego|hasta pronto|nos vemos|hasta la próxima|hasta la proxima)$/i.test(textoOriginal.trim());
+                    const esSaludoSimple = /^(hola|buenas|buenos dias|buenas tardes|buenas noches|hi|hey|holi|holaa|que onda|que tal|hello|alo|buen día|buen dia)$/i.test(textoOriginal.trim());
+                    const esRespuestaPositiva = /^(bien|muy bien|genial|excelente|perfecto|estoy bien|todo bien|me siento bien|fantastico|fantástico|estupendo|muy contento|muy contenta|super bien|todo perfecto|me va bien|estoy excelente)$/i.test(textoOriginal.trim());
+                    const esAyuda = /^(ayuda|ayudame|ayúdame|necesito ayuda|me ayudas|ayúdame por favor|ayudame por favor|socorro|necesito una mano)$/i.test(textoOriginal.trim());
+                    const esChiste = texto.includes("chiste") || texto.includes("broma");
+
+                    if (resultadoMatematicoInicial !== null && textoOriginal.match(/^[0-9+\-*/().^a-zA-Z_]+$/)) {
+                        procesarComando(texto, textoOriginal);
+                    } else if (esDespedida || esSaludoSimple || esRespuestaPositiva || esAyuda || esChiste) {
+                        procesarComando(texto, textoOriginal);
+                    } else {
+                        nombre = nombrePosible;
+                        esperandoNombre = false;
+                        mostrarMensaje(`Mucho gusto, ${nombre}. Ya somos casi amigos. ¿Qué te gustaría hacer hoy?`);
+                    }
+                } else {
+                    procesarComando(texto, textoOriginal);
+                }
+                console.scrollTop = console.scrollHeight;
+            }
+
+            entrada.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    enviarMensaje();
+                }
+            });
+
+            toggleSidebar.addEventListener('click', function() {
+                sidebar.classList.toggle('open');
+                toggleSidebar.classList.toggle('open');
+            });
+
+            sidebarButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const action = this.getAttribute('data-action');
+                    if (action === 'saludo') {
+                        entrada.value = 'hola';
+                        enviarMensaje();
+                    } else if (action === 'ayuda') {
+                        entrada.value = 'ayuda';
+                        enviarMensaje();
+                    } else if (action === 'calcular') {
+                        entrada.value = '';
+                        entrada.focus();
+                        mostrarMensaje('Usa la calculadora de abajo para escribir una operación como 2+2, sqrt(9) o sin(30).');
+                    } else if (action === 'emocion') {
+                        entrada.value = 'estoy feliz';
+                        enviarMensaje();
+                    } else if (action === 'chiste') {
+                        entrada.value = 'cuéntame un chiste';
+                        enviarMensaje();
+                    } else if (action === 'limpiar') {
+                        limpiarChat();
+                    }
+                    sidebar.classList.remove('open');
+                    toggleSidebar.classList.remove('open');
+                });
+            });
+
+            botonEnviar.addEventListener('click', enviarMensaje);
+            botonBorrar.addEventListener('click', function() {
+                entrada.value = '';
+                entrada.focus();
+            });
+            botonIgual.addEventListener('click', function() {
+                enviarMensaje();
+            });
+
+            botones.forEach(boton => {
+                boton.addEventListener('click', function() {
+                    const valor = this.getAttribute('data-value');
+                    if (valor === 'sqrt( )') {
+                        entrada.value += 'sqrt()';
+                    } else if (valor === 'sin()') {
+                        entrada.value += 'sin()';
+                    } else if (valor === 'cos()') {
+                        entrada.value += 'cos()';
+                    } else if (valor === 'tan()') {
+                        entrada.value += 'tan()';
+                    } else if (valor === 'asin()') {
+                        entrada.value += 'asin()';
+                    } else if (valor === 'acos()') {
+                        entrada.value += 'acos()';
+                    } else if (valor === 'atan()') {
+                        entrada.value += 'atan()';
+                    } else {
+                        entrada.value += valor;
+                    }
+                    entrada.focus();
+                });
+            });
+
+            function obtenerRespuestaPersonalizada(pregunta, textoOriginal = "")
+            {
+                if (pregunta.includes("chiste") || pregunta.includes("broma")) {
+                    return null;
+                }
+
+                if (pregunta.includes("me llamo") || pregunta.includes("mi nombre es")) {
+                    const match = textoOriginal.match(/me llamo\s+([a-zA-ZáéíóúÁÉÍÓÚñÑ ]+)/i) || textoOriginal.match(/mi nombre es\s+([a-zA-ZáéíóúÁÉÍÓÚñÑ ]+)/i);
+                    if (match) {
+                        nombre = match[1].trim();
+                        return `Qué bonito, ${nombre}. Me gusta ese nombre.`;
+                    }
+                    return `Gracias por compartirlo conmigo, ${nombre || "amigo"}.`;
+                }
+
+                if (pregunta.includes("como te llamas") || pregunta.includes("cual es tu nombre") || pregunta.includes("cuál es tu nombre")) {
+                    return `Soy tu asistente virtual y me puedes llamar Neco AI.`;
+                }
+
+                if (pregunta.includes("que te gusta") || pregunta.includes("te gusta")) {
+                    return `Me gusta ayudar, conversar y hacer las cosas más fáciles para ti.`;
+                }
+
+                if (pregunta.includes("que opinas") || pregunta.includes("que piensas") || pregunta.includes("qué opinas") || pregunta.includes("qué piensas")) {
+                    return `Creo que una buena conversación debe ser amable, clara y útil.`;
+                }
+
+                if (pregunta.includes("quiero") || pregunta.includes("necesito")) {
+                    return `Entiendo, ${nombre || "amigo"}. Cuéntame más y te ayudo paso a paso.`;
+                }
+
+                if (pregunta.includes("por que") || pregunta.includes("porque")) {
+                    return `A veces las cosas pasan por muchos motivos, pero lo importante es seguir adelante.`;
+                }
+
+                if (pregunta.includes("cuentame") || pregunta.includes("cuéntame") || pregunta.includes("hablame") || pregunta.includes("háblame")) {
+                    return `Claro, ${nombre || "amigo"}. Estoy aquí para escucharte y responderte con calma.`;
+                }
+
+                if (pregunta.includes("sabes") || pregunta.includes("conoces")) {
+                    return `Sí, puedo ayudarte con mensajes simples, preguntas básicas y conversaciones amenas.`;
+                }
+
+                if (pregunta.includes("puedes") || pregunta.includes("podrias") || pregunta.includes("podrías")) {
+                    return `Sí, claro. Dime qué necesitas y lo intentamos.`;
+                }
+
+                return null;
+            }
+
+            function procesarComando(pregunta, textoOriginal = "")
+            {
+                if (pregunta.includes("chiste") || pregunta.includes("broma") || pregunta.includes("cuentanos un chiste")) {
+                    mostrarMensaje(obtenerChisteAleatorio());
+                    return;
+                }
+
+                const respuestaPersonalizada = obtenerRespuestaPersonalizada(pregunta, textoOriginal);
+                if (respuestaPersonalizada) {
+                    mostrarMensaje(respuestaPersonalizada);
+                    return;
+                }
+
+                const expresionMatematica = extraerExpresionMatematica(textoOriginal);
+                if (expresionMatematica) {
+                    mostrarMensaje(`¡Listo! El resultado de ${expresionMatematica.expresion} es ${expresionMatematica.resultado}.`);
+                    return;
+                }
+
+                if (pregunta === "salir") {
+                    mostrarMensaje(`Adios, ${nombre}. ¡Hasta luego!`);
+                    entrada.disabled = true;
+                } else if (["hola", "buenos dias", "buenas tardes", "buenas noches", "hi", "hey", "holi", "holaa", "que onda", "que tal", "como estas", "como va", "como te va", "buenas", "saludos", "hello", "alo", "buen día", "buen dia", "buenas amigo", "buenas amigoa"].includes(pregunta)) {
+                    mostrarMensaje(`¡Hola, ${nombre}! ¿Cómo estás?`);
+                } else if (["bien", "muy bien", "genial", "excelente", "perfecto", "estoy bien", "todo bien", "me siento bien", "fantastico", "fantástico", "estupendo", "muy contento", "muy contenta", "super bien", "todo perfecto", "me va bien", "estoy excelente"].includes(pregunta)) {
+                    mostrarMensaje(`Me alegra escuchar eso, ${nombre}. ¿En qué más te puedo ayudar?`);
+                } else if (["mal", "muy mal", "triste", "deprimido", "estoy mal", "todo mal", "me siento mal", "fatal", "horrible", "aburrido", "me siento terrible", "estoy pésimo", "estoy pesimo", "me siento triste", "muy triste", "tengo miedo", "estoy preocupado", "estoy preocupada"].includes(pregunta)) {
+                    mostrarMensaje(`Lamento escuchar eso, ${nombre}. ¿Quieres hablar de ello?`);
+                } else if (["no se", "no sé", "no lo se", "no lo sé", "no entiendo", "no entiendo nada", "no tengo idea", "ni idea", "no lo se aun", "no lo sé aun", "no sé qué hacer", "no se que hacer", "no sé que hacer", "no tengo ni idea", "no entiendo el tema", "no tengo claro"].includes(pregunta)) {
+                    mostrarMensaje(`No pasa nada, ${nombre}. Puedes probar con: "hola", "ayuda", "bien", "mal" o "salir".`);
+                } else if (["no", "nah", "nop", "no gracias", "no gracias por ahora", "nunca", "jamás", "para nada", "de ninguna manera", "nada"].includes(pregunta)) {
+                    mostrarMensaje(`Entendido, ${nombre}. ¿Hay algo más en lo que te pueda ayudar?`);
+                } else if (["si", "sí", "claro", "ok", "okay", "si claro", "por supuesto", "vale", "vale gracias", "sii", "si por favor", "claro que si", "claro que sí"].includes(pregunta)) {
+                    mostrarMensaje(`Perfecto, ${nombre}. Continúa.`);
+                } else if (["gracias", "gracias por tu ayuda", "thank you", "muchas gracias", "mil gracias", "te agradezco", "thanks", "thx", "te lo agradezco", "muchisimas gracias"].includes(pregunta)) {
+                    mostrarMensaje(`De nada, ${nombre}. Estoy aquí para ayudarte.`);
+                } else if (["que haces", "qué haces", "que puedes hacer", "qué puedes hacer", "quien eres", "quién eres", "como te llamas", "cómo te llamas", "cual es tu nombre", "cuál es tu nombre", "como funcionas", "cómo funcionas", "para que sirves", "para qué sirves"].includes(pregunta)) {
+                    mostrarMensaje(`Soy tu asistente virtual, ${nombre}. Puedo saludar, responder mensajes simples y ayudarte con cosas básicas.`);
+                } else if (["que hora es", "qué hora es", "hora", "que fecha es", "qué fecha es", "fecha", "qué día es", "qué dia es", "que dia es"].includes(pregunta)) {
+                    mostrarMensaje(`No puedo ver la hora del sistema aquí, pero puedo ayudarte a buscarla si quieres.`);
+                } else if (["como te sientes", "cómo te sientes", "como estas", "cómo estás", "cómo vas", "como vas", "cómo andas", "como andas"].includes(pregunta)) {
+                    mostrarMensaje(`Estoy bien, ${nombre}. Gracias por preguntar.`);
+                } else if (["estoy cansado", "estoy cansada", "tengo sueño", "me siento cansado", "me siento cansada", "estoy dormido", "estoy dormida", "necesito descansar", "quiero dormir"].includes(pregunta)) {
+                    mostrarMensaje(`Descansa un poco, ${nombre}. Si quieres, podemos hablar de otra cosa.`);
+                } else if (["estoy emocionado", "estoy emocionada", "me siento feliz", "estoy feliz", "contento", "contenta", "estoy muy feliz", "estoy alegre", "me siento alegre", "estoy emocionadísimo"].includes(pregunta)) {
+                    mostrarMensaje(`¡Qué bien! Me alegra mucho, ${nombre}.`);
+                } else if (["estoy enojado", "estoy enojada", "me enoje", "me enfade", "estoy molesto", "estoy molesta", "estoy furioso", "estoy furiosa", "estoy bravo", "estoy brava"].includes(pregunta)) {
+                    mostrarMensaje(`Entiendo que estés molesto, ${nombre}. Respira hondo y cuéntame qué pasó.`);
+                } else if (["adios", "adiós", "chau", "bye", "hasta luego", "hasta pronto", "nos vemos", "hasta la próxima", "hasta la proxima"].includes(pregunta)) {
+                    mostrarMensaje(`Hasta luego, ${nombre}. Que tengas un buen día.`);
+                } else if (["ayuda", "ayudame", "ayúdame", "necesito ayuda", "me ayudas", "ayúdame por favor", "ayudame por favor", "socorro", "necesito una mano"].includes(pregunta)) {
+                    mostrarMensaje(`Claro, ${nombre}. Puedes probar con frases como: hola, bien, mal, gracias o salir.`);
+                } else {
+                    mostrarMensaje(`Lo siento, no entendí esa pregunta. A veces hasta los mejores asistentes se quedan en blanco. Prueba con "ayuda" o una cuenta como 2+2.`);
+                }
+            }
+        </script>
+    </body>
+
+</html>
